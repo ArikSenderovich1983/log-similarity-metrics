@@ -4,6 +4,46 @@ from typing import Tuple
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
+from scipy.optimize import linprog
+
+def optimal_transportation(p, q):
+    """
+    Computes the Optimal Transportation distance between two probability distributions p and q.
+    p and q do not have to be probability distributions.
+    p is a time series with some total mass
+    q is a time series with some total mess
+    They do not have to be of the same length
+    example: p[1] = 10; p[2] = 20
+            q[1] = 5; q[2] = 1; q[3] = 5
+    """
+    n = len(p)
+    m = len(q)
+    # Set up the cost matrix C
+    C = np.zeros((n, m))
+    for i in range(n):
+        for j in range(m):
+            C[i][j] = abs(i - j)
+    # Set up the constraints
+    Aeq = np.zeros((n + m, n * m))
+    beq = np.zeros(n + m)
+    for i in range(n):
+        for j in range(m):
+            Aeq[i][i * m + j] = 1
+            Aeq[n + j][i * m + j] = 1
+        beq[i] = p[i]
+    for j in range(m):
+        beq[n + j] = q[j]
+    # Set up the bounds for the variables
+    bounds = []
+    for i in range(n):
+        for j in range(m):
+            bounds.append((0, None))
+    # Solve the linear program
+    res = linprog(c=C.flatten(), A_eq=Aeq, b_eq=beq, bounds=bounds)
+    return res.fun
+
+optimal_transportation([10, 20], [5, 1 , 5])
+
 
 def earth_movers_distance(hist_1: list, hist_2: list, extra_mass: float = 1.0) -> float:
     """
